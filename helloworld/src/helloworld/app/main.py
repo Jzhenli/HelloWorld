@@ -1,6 +1,3 @@
-"""
-My first application
-"""
 from helloworld.app.func import add,sub
 
 def main():

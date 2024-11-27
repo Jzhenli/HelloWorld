@@ -1,0 +1,1 @@
+from helloworld.app.main import main
