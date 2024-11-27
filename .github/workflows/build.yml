@@ -29,7 +29,7 @@ jobs:
           cd helloworld
           python -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output
           copy .\dist\*.pyd src\helloworld
-          rmdir /S /Q src\helloworld\app
+          Remove-Item -Path 'src\helloworld\app' -Recurse -Force
 
       - name: Build App
         run: |
