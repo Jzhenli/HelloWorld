@@ -44,4 +44,64 @@ jobs:
           name: windows-executable
           path: helloworld/dist/*.zip
 
-  
+  build-linux_armv7:
+    runs-on: ubuntu-latest
+    env:
+      QEMU_ARCH: arm
+      QEMU_STATIC: /usr/bin/qemu-arm-static
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU and debootstrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static debootstrap
+
+      - name: Set up ARM chroot environment (Bullseye)
+        run: |
+          sudo debootstrap --arch=armhf --variant=buildd bullseye /mnt/arm-rootfs http://raspbian.raspberrypi.org/raspbian/
+          sudo cp /usr/bin/qemu-arm-static /mnt/arm-rootfs/usr/bin/
+          sudo mount --bind /dev /mnt/arm-rootfs/dev
+          sudo mount --bind /sys /mnt/arm-rootfs/sys
+          sudo mount --bind /proc /mnt/arm-rootfs/proc
+
+      - name: Install utilities in ARM chroot
+        run: |
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "apt-get update && apt-get install -y wget python3.9 python3.9-dev python3.9-distutils patchelf"
+
+      - name: Ensure 'pip' is installed for Python 3.9 in ARM chroot
+        run: |
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "wget https://bootstrap.pypa.io/get-pip.py && python3.9 get-pip.py && rm get-pip.py"
+
+      - name: Install Nuitka in ARM chroot
+        run: |
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==1.0.6 orderedset==2.0.3"
+
+      - name: Compile for ARMv7
+        run: |
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "mkdir -p /github/workspace"
+          sudo cp -r . /mnt/arm-rootfs/github/workspace
+          #complie app to so file
+          #sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3.9 -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && briefcase create && briefcase build && briefcase package"
+
+      - name: Copy ARM executable to host
+        run: |
+          sudo mkdir -p /github/workspace/dist/
+          sudo cp /mnt/arm-rootfs/github/workspace/dist/*.deb /github/workspace/dist/
+
+      - name: Upload ARM Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm-executable
+          path: /github/workspace/dist/*.deb
+
+      - name: Clean up chroot environment
+        run: |
+          if mountpoint -q /mnt/arm-rootfs/dev; then sudo umount /mnt/arm-rootfs/dev; fi
+          if mountpoint -q /mnt/arm-rootfs/sys; then sudo umount /mnt/arm-rootfs/sys; fi
+          if mountpoint -q /mnt/arm-rootfs/proc; then sudo umount /mnt/arm-rootfs/proc; fi
+          if mountpoint -q /mnt/arm-rootfs; then sudo umount /mnt/arm-rootfs; fi
+          sudo rm -rf /mnt/arm-rootfs  
