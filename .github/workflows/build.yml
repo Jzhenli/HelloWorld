@@ -22,17 +22,18 @@ jobs:
 
       - name: Setup Environment
         run: |
-          cd helloworld
           pip install briefcase==0.3.20 nuitka==1.0.6 ordered-set==4.1.0
 
       - name: compile app to pyd
         run: |
+          cd helloworld
           python -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output
           copy .\dist\*.pyd src\helloworld
           rmdir /S /Q src\helloworld\app
 
       - name: Build App
         run: |
+          cd helloworld
           briefcase create
           briefcase build
           briefcase package -p zip
