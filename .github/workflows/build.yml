@@ -69,7 +69,7 @@ jobs:
 
       - name: Install utilities in ARM chroot
         run: |
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "apt-get update && apt-get install -y wget python3.9 python3.9-dev python3.9-distutils patchelf"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "apt-get update && apt-get install -y git wget python3.9 python3.9-dev python3.9-distutils patchelf"
 
       - name: Ensure 'pip' is installed for Python 3.9 in ARM chroot
         run: |
