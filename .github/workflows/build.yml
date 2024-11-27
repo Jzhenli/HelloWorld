@@ -91,7 +91,7 @@ jobs:
       - name: Copy ARM executable to host
         run: |
           sudo mkdir -p /github/workspace/dist/
-          sudo cp /mnt/arm-rootfs/github/workspace/dist/*.deb /github/workspace/dist/
+          sudo cp /mnt/arm-rootfs/github/workspace/helloworld/dist/*.deb /github/workspace/dist/
 
       - name: Upload ARM Executable
         uses: actions/upload-artifact@v4
