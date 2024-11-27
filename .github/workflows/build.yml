@@ -85,7 +85,8 @@ jobs:
           sudo chroot /mnt/arm-rootfs /bin/bash -c "mkdir -p /github/workspace"
           sudo cp -r . /mnt/arm-rootfs/github/workspace
           #complie app to so file
-          #sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3 -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3 -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && cp ./dist/*.pyd src/helloworld/ && rm -rf src/helloworld/app"
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && briefcase create && briefcase build && briefcase package"
 
       - name: Copy ARM executable to host
