@@ -1,4 +1,4 @@
-from helloworld.app import main
+from helloworld.main import main
 
 if __name__ == "__main__":
     main()
