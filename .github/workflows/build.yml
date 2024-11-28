@@ -59,7 +59,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y qemu-user-static debootstrap
 
-      - name: Set up ARM chroot environment (Bullseye)
+      - name: Set up ARM chroot environment (Bullseye OS)
         run: |
           sudo debootstrap --arch=armhf --variant=buildd bullseye /mnt/arm-rootfs http://raspbian.raspberrypi.org/raspbian/
           sudo cp /usr/bin/qemu-arm-static /mnt/arm-rootfs/usr/bin/
@@ -69,24 +69,22 @@ jobs:
 
       - name: Install utilities in ARM chroot
         run: |
+          #install deps for briefcase
           sudo chroot /mnt/arm-rootfs /bin/bash -c "apt-get update && apt-get install -y patchelf wget git build-essential pkg-config python3-dev python3-venv libgirepository1.0-dev libcairo2-dev gir1.2-gtk-3.0 libcanberra-gtk3-module"
-
-
-      - name: Ensure 'pip' is installed for Python 3.9 in ARM chroot
-        run: |
+          #Ensure 'pip' is installed for Python 3.9 in ARM chroot
           sudo chroot /mnt/arm-rootfs /bin/bash -c "wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm get-pip.py"
-
-      - name: Install Nuitka in ARM chroot
-        run: |
+          #Install Nuitka and briefcase in ARM chroot
           sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==1.0.6 orderedset==2.0.3"
 
-      - name: Compile for ARMv7
+      - name: Compile and package code for ARMv7
         run: |
           sudo chroot /mnt/arm-rootfs /bin/bash -c "mkdir -p /github/workspace"
           sudo cp -r . /mnt/arm-rootfs/github/workspace
-          #complie app to so file
+          #complie app to *.so file with nuitka
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3 -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output"
+          #repalce app folder with app.so in the source code
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && cp dist/*.so src/helloworld/ && rm -rf src/helloworld/app"
+          #package source code with briefcase
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && briefcase create && briefcase build && briefcase package"
 
       - name: Copy ARM executable to host
@@ -102,8 +100,8 @@ jobs:
 
       - name: Clean up chroot environment
         run: |
-          if mountpoint -q /mnt/arm-rootfs/dev; then sudo umount /mnt/arm-rootfs/dev; fi
-          if mountpoint -q /mnt/arm-rootfs/sys; then sudo umount /mnt/arm-rootfs/sys; fi
-          if mountpoint -q /mnt/arm-rootfs/proc; then sudo umount /mnt/arm-rootfs/proc; fi
-          if mountpoint -q /mnt/arm-rootfs; then sudo umount /mnt/arm-rootfs; fi
+          sudo umount /mnt/arm-rootfs/dev
+          sudo umount /mnt/arm-rootfs/sys
+          sudo umount /mnt/arm-rootfs/proc
+          sudo umount /mnt/arm-rootfs
           sudo rm -rf /mnt/arm-rootfs  
