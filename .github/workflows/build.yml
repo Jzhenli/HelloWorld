@@ -69,23 +69,22 @@ jobs:
 
       - name: Install utilities in ARM chroot
         run: |
-          #install deps for briefcase
+          # install deps for briefcase
           sudo chroot /mnt/arm-rootfs /bin/bash -c "apt-get update && apt-get install -y patchelf wget git build-essential pkg-config python3-dev python3-venv libgirepository1.0-dev libcairo2-dev gir1.2-gtk-3.0 libcanberra-gtk3-module"
-          #Ensure 'pip' is installed for Python 3.9 in ARM chroot
+          # Ensure 'pip' is installed for Python 3.9 in ARM chroot
           sudo chroot /mnt/arm-rootfs /bin/bash -c "wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm get-pip.py"
-          #Install Nuitka and briefcase in ARM chroot
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==1.0.6 orderedset==2.0.3"
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install orjson==3.9.10 -i https://www.piwheels.org/simple"
+          # Install Nuitka and briefcase in ARM chroot
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==1.0.6 orderedset==2.0.3 orjson==3.9.10 -i https://www.piwheels.org/simple"
 
       - name: Compile and package code for ARMv7
         run: |
           sudo chroot /mnt/arm-rootfs /bin/bash -c "mkdir -p /github/workspace"
           sudo cp -r . /mnt/arm-rootfs/github/workspace
-          #complie app to *.so file with nuitka
+          # complie app to *.so file with nuitka
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3 -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output"
-          #repalce app folder with app.so in the source code
+          # repalce app folder with app.so in the source code
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && cp dist/*.so src/helloworld/ && rm -rf src/helloworld/app"
-          #package source code with briefcase
+          # package source code with briefcase
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && briefcase create && briefcase build && briefcase package"
 
       - name: Copy ARM executable to host
