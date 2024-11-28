@@ -74,7 +74,7 @@ jobs:
           # Ensure 'pip' is installed for Python 3.9 in ARM chroot
           sudo chroot /mnt/arm-rootfs /bin/bash -c "wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm get-pip.py"
           # Install Nuitka and briefcase in ARM chroot
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==1.0.6 orderedset==2.0.3 orjson==3.9.10 -i https://www.piwheels.org/simple"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==1.0.6 orderedset==2.0.3 -i https://www.piwheels.org/simple"
 
       - name: Compile and package code for ARMv7
         run: |
