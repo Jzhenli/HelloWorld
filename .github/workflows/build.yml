@@ -100,8 +100,8 @@ jobs:
 
       - name: Clean up chroot environment
         run: |
-          sudo umount /mnt/arm-rootfs/dev
-          sudo umount /mnt/arm-rootfs/sys
-          sudo umount /mnt/arm-rootfs/proc
-          sudo umount /mnt/arm-rootfs
+          if mountpoint -q /mnt/arm-rootfs/dev; then sudo umount /mnt/arm-rootfs/dev; fi
+          if mountpoint -q /mnt/arm-rootfs/sys; then sudo umount /mnt/arm-rootfs/sys; fi
+          if mountpoint -q /mnt/arm-rootfs/proc; then sudo umount /mnt/arm-rootfs/proc; fi
+          if mountpoint -q /mnt/arm-rootfs; then sudo umount /mnt/arm-rootfs; fi
           sudo rm -rf /mnt/arm-rootfs  
