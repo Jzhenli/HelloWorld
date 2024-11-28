@@ -79,6 +79,7 @@ jobs:
       - name: Install Nuitka in ARM chroot
         run: |
           sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==1.0.6 orderedset==2.0.3"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install orjson==3.9.10 -i https://www.piwheels.org/simple"
 
       - name: Compile for ARMv7
         run: |
