@@ -2,7 +2,7 @@
 [tool.briefcase]
 project_name = "Hello World"
 bundle = "com.example"
-version = "0.0.2"
+version = "0.0.3"
 url = "https://example.com/helloworld"
 license.file = "LICENSE"
 author = "Jane Developer"
@@ -79,7 +79,10 @@ flatpak_sdk = "org.freedesktop.Sdk"
 
 [tool.briefcase.app.helloworld.windows]
 requires = [
+    "fastapi",
+    "uvicorn",
 ]
+icon = "icons/windows/xplay"
 
 # Mobile deployments
 [tool.briefcase.app.helloworld.iOS]
