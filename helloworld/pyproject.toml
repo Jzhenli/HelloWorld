@@ -34,7 +34,10 @@ requires = [
 
 [tool.briefcase.app.helloworld.linux]
 requires = [
+    "fastapi",
+    "uvicorn",
 ]
+icon = "icons/linux/xplay"
 
 [tool.briefcase.app.helloworld.linux.system.debian]
 system_requires = [
