@@ -27,7 +27,7 @@ jobs:
       - name: compile app to pyd with nuitka
         run: |
           cd helloworld
-          python -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output
+          python -m nuitka --module src/helloworld/app --include-package=app --output-dir=dist --remove-output
           copy .\dist\*.pyd src\helloworld
           Remove-Item -Path 'src\helloworld\app' -Recurse -Force
 
@@ -81,7 +81,7 @@ jobs:
           sudo chroot /mnt/arm-rootfs /bin/bash -c "mkdir -p /github/workspace"
           sudo cp -r . /mnt/arm-rootfs/github/workspace
           # complie app to *.so file with nuitka
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3 -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3 -m nuitka --module src/helloworld/app --include-package=app --output-dir=dist --remove-output"
           # repalce app folder with app.so in the source code
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && cp dist/*.so src/helloworld/ && rm -rf src/helloworld/app"
 
