@@ -28,15 +28,17 @@ jobs:
           pip install briefcase==0.3.20 nuitka==1.0.6 ordered-set==4.1.0
 
       - name: compile app to pyd with nuitka
+        shell: cmd
         run: |
-          cd $env:PROJECT_NAME
-          python -m nuitka --module src/$env:PROJECT_NAME/app --include-package=app --output-dir=dist --remove-output
-          copy .\dist\*.pyd src\$env:PROJECT_NAME
-          Remove-Item -Path "src\$($env:PROJECT_NAME)\app" -Recurse -Force
+          cd %PROJECT_NAME%
+          python -m nuitka --module src/%PROJECT_NAME%/app --include-package=app --output-dir=dist --remove-output
+          copy .\dist\*.pyd src\%PROJECT_NAME%
+          rmdir /S /Q src\%PROJECT_NAME%\app
 
       - name: package coode with briefcase
+        shell: cmd
         run: |
-          cd $env:PROJECT_NAME
+          cd %PROJECT_NAME%
           briefcase create
           briefcase build
           briefcase package -p zip
@@ -45,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-executable
-          path: helloworld/dist/*.zip
+          path: ${{ env.PROJECT_NAME }}/dist/*.zip
 
   build-linux_armv7:
     runs-on: ubuntu-latest
