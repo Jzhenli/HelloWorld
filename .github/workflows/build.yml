@@ -29,14 +29,14 @@ jobs:
 
       - name: compile app to pyd with nuitka
         run: |
-          cd $PROJECT_NAME
-          python -m nuitka --module src/$PROJECT_NAME/app --include-package=app --output-dir=dist --remove-output
-          copy .\dist\*.pyd src\$PROJECT_NAME
-          Remove-Item -Path 'src\$PROJECT_NAME\app' -Recurse -Force
+          cd $env:PROJECT_NAME
+          python -m nuitka --module src/$env:PROJECT_NAME/app --include-package=app --output-dir=dist --remove-output
+          copy .\dist\*.pyd src\$env:PROJECT_NAME
+          Remove-Item -Path 'src\$env:PROJECT_NAME\app' -Recurse -Force
 
       - name: package coode with briefcase
         run: |
-          cd $PROJECT_NAME
+          cd $env:PROJECT_NAME
           briefcase create
           briefcase build
           briefcase package -p zip
@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-executable
-          path: $PROJECT_NAME/dist/*.zip
+          path: $env:PROJECT_NAME/dist/*.zip
 
   build-linux_armv7:
     runs-on: ubuntu-latest
