@@ -32,7 +32,7 @@ jobs:
           cd $env:PROJECT_NAME
           python -m nuitka --module src/$env:PROJECT_NAME/app --include-package=app --output-dir=dist --remove-output
           copy .\dist\*.pyd src\$env:PROJECT_NAME
-          Remove-Item -Path 'src\$env:PROJECT_NAME\app' -Recurse -Force
+          Remove-Item -Path "src\$($env:PROJECT_NAME)\app" -Recurse -Force
 
       - name: package coode with briefcase
         run: |
@@ -84,19 +84,19 @@ jobs:
           sudo chroot /mnt/arm-rootfs /bin/bash -c "mkdir -p /github/workspace"
           sudo cp -r . /mnt/arm-rootfs/github/workspace
           # complie app to *.so file with nuitka
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3 -m nuitka --module src/helloworld/app --include-package=app --output-dir=dist --remove-output"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/$PROJECT_NAME && python3 -m nuitka --module src/$PROJECT_NAME/app --include-package=app --output-dir=dist --remove-output"
           # repalce app folder with app.so in the source code
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && cp dist/*.so src/helloworld/ && rm -rf src/helloworld/app"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/$PROJECT_NAME && cp dist/*.so src/$PROJECT_NAME/ && rm -rf src/$PROJECT_NAME/app"
 
       - name: packge code with briefcase
         run: |
           # package source code with briefcase
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && briefcase create && briefcase build && briefcase package"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/$PROJECT_NAME && briefcase create && briefcase build && briefcase package"
 
       - name: Copy ARM executable to host
         run: |
           sudo mkdir -p /github/workspace/dist/
-          sudo cp /mnt/arm-rootfs/github/workspace/helloworld/dist/*.deb /github/workspace/dist/
+          sudo cp /mnt/arm-rootfs/github/workspace/$PROJECT_NAME/dist/*.deb /github/workspace/dist/
 
       - name: Upload ARM Executable
         uses: actions/upload-artifact@v4
