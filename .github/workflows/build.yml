@@ -24,14 +24,14 @@ jobs:
         run: |
           pip install briefcase==0.3.20 nuitka==1.0.6 ordered-set==4.1.0
 
-      - name: compile app to pyd
+      - name: compile app to pyd with nuitka
         run: |
           cd helloworld
           python -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output
           copy .\dist\*.pyd src\helloworld
           Remove-Item -Path 'src\helloworld\app' -Recurse -Force
 
-      - name: Build App
+      - name: package coode with briefcase
         run: |
           cd helloworld
           briefcase create
@@ -74,9 +74,9 @@ jobs:
           # Ensure 'pip' is installed for Python 3.9 in ARM chroot
           sudo chroot /mnt/arm-rootfs /bin/bash -c "wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm get-pip.py"
           # Install Nuitka and briefcase in ARM chroot
-          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==1.0.6 orderedset==2.0.3 -i https://www.piwheels.org/simple"
+          sudo chroot /mnt/arm-rootfs /bin/bash -c "pip3 install briefcase==0.3.20 nuitka==2.4.11 --extra-index-url https://www.piwheels.org/simple"
 
-      - name: Compile and package code for ARMv7
+      - name: compile app to *.so with nuitka
         run: |
           sudo chroot /mnt/arm-rootfs /bin/bash -c "mkdir -p /github/workspace"
           sudo cp -r . /mnt/arm-rootfs/github/workspace
@@ -84,6 +84,9 @@ jobs:
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && python3 -m nuitka --module src/helloworld/app --include-package=app --show-progress  --output-dir=dist --remove-output"
           # repalce app folder with app.so in the source code
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && cp dist/*.so src/helloworld/ && rm -rf src/helloworld/app"
+
+      - name: packge code with briefcase
+        run: |
           # package source code with briefcase
           sudo chroot /mnt/arm-rootfs /bin/bash -c "cd /github/workspace/helloworld && briefcase create && briefcase build && briefcase package"
 

@@ -34,7 +34,7 @@ requires = [
 
 [tool.briefcase.app.helloworld.linux]
 requires = [
-    "--index-url=https://www.piwheels.org/simple",
+    "--extra-index-url=https://www.piwheels.org/simple",
     "fastapi==0.108.0",
     "uvicorn==0.25.0",
     "orjson==3.9.10",
