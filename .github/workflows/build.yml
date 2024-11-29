@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  PROJECT_NAME: 'helloworld'
+
 jobs:
   build-windows_x64:
     runs-on: windows-latest
@@ -26,14 +29,14 @@ jobs:
 
       - name: compile app to pyd with nuitka
         run: |
-          cd helloworld
-          python -m nuitka --module src/helloworld/app --include-package=app --output-dir=dist --remove-output
-          copy .\dist\*.pyd src\helloworld
-          Remove-Item -Path 'src\helloworld\app' -Recurse -Force
+          cd $PROJECT_NAME
+          python -m nuitka --module src/$PROJECT_NAME/app --include-package=app --output-dir=dist --remove-output
+          copy .\dist\*.pyd src\$PROJECT_NAME
+          Remove-Item -Path 'src\$PROJECT_NAME\app' -Recurse -Force
 
       - name: package coode with briefcase
         run: |
-          cd helloworld
+          cd $PROJECT_NAME
           briefcase create
           briefcase build
           briefcase package -p zip
@@ -42,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-executable
-          path: helloworld/dist/*.zip
+          path: $PROJECT_NAME/dist/*.zip
 
   build-linux_armv7:
     runs-on: ubuntu-latest
