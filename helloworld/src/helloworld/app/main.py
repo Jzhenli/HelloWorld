@@ -13,8 +13,8 @@ class Item(BaseModel):
 
 @app.get("/")
 def read_root():
-    print("3+2=",add(3,2))
-    print("3-2=",sub(3,2))
+    print("3 + 2 =",add(3,2))
+    print("3 - 2 =",sub(3,2))
     return {"Hello": "World"}
 
 @app.get("/items/{item_id}")
