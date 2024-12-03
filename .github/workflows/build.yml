@@ -2,11 +2,8 @@ name: Build and Compile Python Application
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - 'v*'  # 匹配以 'v' 开头的 Tag，例如 v1.0, v2.0 等
 
 env:
   PROJECT_NAME: 'helloworld'
