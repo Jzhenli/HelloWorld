@@ -2,7 +2,7 @@
 [tool.briefcase]
 project_name = "Hello World"
 bundle = "com.example"
-version = "0.0.3"
+version = "0.1.0"
 url = "https://example.com/helloworld"
 license.file = "LICENSE"
 author = "Jane Developer"
@@ -35,9 +35,8 @@ requires = [
 [tool.briefcase.app.helloworld.linux]
 requires = [
     "--extra-index-url=https://www.piwheels.org/simple",
-    "fastapi==0.108.0",
+    "fastapi-offline==1.7.3",
     "uvicorn==0.25.0",
-    "orjson==3.9.10",
 ]
 icon = "icons/linux/xplay"
 
@@ -84,8 +83,9 @@ flatpak_sdk = "org.freedesktop.Sdk"
 
 [tool.briefcase.app.helloworld.windows]
 requires = [
-    "fastapi",
+    "fastapi-offline",
     "uvicorn",
+    "toga-winforms",
 ]
 icon = "icons/windows/xplay"
 
