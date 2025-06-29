@@ -1,1 +1,1 @@
-from helloworld.app.main import main
+from .main import main
