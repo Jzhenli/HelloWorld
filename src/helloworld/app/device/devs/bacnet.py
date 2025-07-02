@@ -151,7 +151,7 @@ class BACNetDevice(BaseDevice):
                 response = await self.handle_cmd(DeviceRequest(**request))
                 if not response["status"] == "OK":continue
                 pros = {str(pro_id):pro_value for (obj_id,pro_id,pro_index,pro_value) in response["data"]}
-                logger.info(f"metric.value:{pros}")
+                logger.debug(f"metric.value:{pros}")
                 points.append(
                     {
                         "metric_id":metric.id,

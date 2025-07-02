@@ -86,6 +86,17 @@ async def discovery_bacnet_device():
         ret = {"status":"FAIL", "data":error_msg}
     return ret
 
+@router.post("/bacnet/request", response_model=ResponseModel, status_code=200)
+async def bacnet_request(request:DeviceRequest, session: AsyncSession = Depends(get_session)):
+    try:
+        local_bacnet_device = device_manager.get_proxy_device("bacnet")
+        await local_bacnet_device.open()
+        ret = await local_bacnet_device.handle_cmd(request)
+    except Exception as e:
+        error_msg = f"bacnet request error {e}"
+        ret = {"status":"FAIL", "data":error_msg}
+    return ret
+
 @router.post("/enable", response_model=ResponseModel, status_code=200)
 async def enable_device(device_id: uuid.UUID, enable:bool, session: AsyncSession = Depends(get_session)):
     device = await session.get(Device, device_id)

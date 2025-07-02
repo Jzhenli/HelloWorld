@@ -99,7 +99,12 @@ class BacnetClient:
             }
             
             try:
-                parameter_list = [f"{device_identifier}", ["objectName", "modelName", "vendorName","applicationSoftwareVersion"]]
+                parameter_list = [
+                    f"{device_identifier}", 
+                    ["objectName", "modelName", "vendorName","applicationSoftwareVersion","serialNumber"],
+                    "networkPort, 1", 
+                    ["ipDHCPEnable"]
+                ]
                 response = await self.read_property_multiple(device_address, parameter_list)
                 for (
                     object_identifier,

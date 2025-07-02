@@ -41,7 +41,7 @@ class ModbusPayloadDecoder:
                 if "." in divisor_str:
                     parts = divisor_str.split('.')
                     decimal_places = len(parts[1].rstrip('0'))
-                    print("req.divisor=", divisor, type(divisor), decimal_places)
+                    # print("req.divisor=", divisor, type(divisor), decimal_places)
                     value = f"{value*divisor:.{decimal_places}f}"
                 else:
                     value = f"{value*divisor}"
