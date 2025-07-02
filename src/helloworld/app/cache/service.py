@@ -1,5 +1,6 @@
 import asyncio
 import time
+import json
 from collections import deque
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -51,7 +52,8 @@ class LiteAsyncCache:
             # Insert/update cache entries
             for key, value in items.items():
                 is_new = key not in self.cache
-                self.cache[key] = (value, expire_at)
+                serialized_value = json.dumps(value, default=str)
+                self.cache[key] = (serialized_value, expire_at)
                 if is_new:
                     self.keys_queue.append(key)
             return True
@@ -68,7 +70,10 @@ class LiteAsyncCache:
             del self.cache[key]
             return None
             
-        return value
+        try:
+            return json.loads(value)
+        except Exception:
+            return value
 
     def _clean_head_expired(self):
         """Clean consecutive expired keys at queue head"""

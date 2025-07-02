@@ -29,7 +29,7 @@ class BacnetClientException(Exception):
 #   return re.sub(r"([A-Z])", r"-\1", input_string).lower().lstrip('-')
 
 class BacnetClient:
-    def __init__(self, local_ip: str, local_port: int = 47808, netmask:int = 24):
+    def __init__(self, local_ip: str, local_port: int = 47809, netmask:int = 24):
         """
         Init BACnet client
         :param local_ip: ip address

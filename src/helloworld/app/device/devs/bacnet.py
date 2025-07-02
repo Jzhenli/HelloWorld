@@ -8,6 +8,7 @@ from ...cache import aiocache
 
 import time
 import asyncio
+import json
 from dataclasses import dataclass
 from typing import Optional, Any
 from bacpypes3.basetypes import ErrorType
@@ -135,36 +136,34 @@ class BACNetDevice(BaseDevice):
         logger.info(f"BACNet Device {self.device.name} sample.....")
         metrics:list[Metric] = await get_metrics_by_device(self.device.id)
         points = []
-        batch_size = 75
-        batches = [metrics[i:i+batch_size] for i in range(0, len(metrics), batch_size)]
-        for batch in batches:
+        for metric in metrics:
             try:
-                pro_list = ['presentValue']
-                my_read_list = [item for metric in batch for item in (metric.uid, pro_list)]
+                logger.debug(f"metric.metric_name:{metric.name}")
+                pro_list:list = metric.property.get("pro_list") # type: ignore
+                if not pro_list: continue
                 request = {
                     "function":"read_property_multiple",
                     "parms":{
                         "address":self.device.address, 
-                        "read_list":my_read_list
+                        "read_list":[metric.uid, pro_list]
                     }
                 }
                 response = await self.handle_cmd(DeviceRequest(**request))
                 if not response["status"] == "OK":continue
-                for index, point_data in enumerate(response["data"]):
-                    obj_id,pro_id,pro_index,pro_value = point_data
-                    # print(obj_id, pro_value, batch[index].name)
-                    pros = {str(pro_id):pro_value}
-                    points.append(
-                        {
-                            "metric_id":batch[index].id,
-                            "value":pro_value,
-                            "timestamp": int(time.time()),
-                            "property":pros,
-                            "tags":batch[index].name
-                        }
-                    )
+                pros = {str(pro_id):pro_value for (obj_id,pro_id,pro_index,pro_value) in response["data"]}
+                logger.info(f"metric.value:{pros}")
+                points.append(
+                    {
+                        "metric_id":metric.id,
+                        "value":pros.get("present-value", ""),
+                        "timestamp": int(time.time()),
+                        "property":pros,
+                        "tags":metric.name
+                    }
+                )
+                # await asyncio.sleep(0.005)
             except Exception as e:
-                logger.error(f"BACNetDevice batch sample error {e}")
+                logger.info(f"BACNetDevice sample error {e}")
 
         if points:
             await aiocache.mset({point["metric_id"]: point for point in points}, ttl=2*int(ttl))

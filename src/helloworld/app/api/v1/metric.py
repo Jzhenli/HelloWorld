@@ -68,8 +68,8 @@ async def batch_create_metrics(metrics: List[MetricCreate], session: AsyncSessio
         # db_metrics = [Metric.model_validate(metric) for metric in metrics]
         db_metrics = []
         for metric in metrics:
-            if not starts_with_any_prefix(metric.name):
-                continue
+            # if not starts_with_any_prefix(metric.name):
+            #     continue
             try:
                 db_metrics.append(Metric.model_validate(metric))
             except:

@@ -35,9 +35,16 @@ class ModbusPayloadDecoder:
                 return f(decoder, size).decode().strip("\x00")
             
             value = f(decoder)
-            if data_type not in ["str", "string"] and divisor > 1:
-                decimal_places = len(str(divisor)) - 1
-                value = f"{value/divisor:.{decimal_places}f}"
+            if data_type not in ["str", "string"]:
+                # decimal_places = len(str(divisor)) - 1
+                divisor_str = str(divisor)
+                if "." in divisor_str:
+                    parts = divisor_str.split('.')
+                    decimal_places = len(parts[1].rstrip('0'))
+                    print("req.divisor=", divisor, type(divisor), decimal_places)
+                    value = f"{value*divisor:.{decimal_places}f}"
+                else:
+                    value = f"{value*divisor}"
             return value
         except KeyError as err:
             logging.error(f"Encoding specified for decoding isn't valid : {err}.")
