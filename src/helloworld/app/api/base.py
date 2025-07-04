@@ -6,6 +6,10 @@ router = APIRouter(prefix="/iot",tags=["base"])
 def check_online():
     return {"status": "OK"}
 
+@router.get("/hello")
+def check_hello():
+    return {"status": "hello"}
+
 
 @router.get("/version")
 def get_version():
