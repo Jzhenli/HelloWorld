@@ -1,9 +1,10 @@
 import logging
 
 from pymodbus.constants import Endian
-from pymodbus.payload import BinaryPayloadDecoder
+from pymodbus.payload import BinaryPayloadDecoder, BinaryPayloadBuilder
 
-from .exceptions import ModbusDecoderException
+from .exceptions import ModbusDecoderException, ModbusEncoderException
+
 
 class ModbusPayloadDecoder:
 
@@ -23,7 +24,7 @@ class ModbusPayloadDecoder:
         "string": BinaryPayloadDecoder.decode_string
     }
     @classmethod
-    def decode(cls, registers, data_type, byteorder=Endian.BIG, wordorder=Endian.BIG, divisor:int=1):
+    def decode(cls, registers, data_type, byteorder=Endian.BIG, wordorder=Endian.BIG, divisor=1):
         if data_type not in cls._functions_map:
             return registers
         
@@ -53,3 +54,54 @@ class ModbusPayloadDecoder:
         except Exception as err:
             logging.error(f"Cannot decode modbus registers : {err}")
             raise ModbusDecoderException(f"Cannot decode values for encoding : {data_type} : {err}")
+
+
+
+class ModbusPayloadEncoder:
+
+    _functions_map = {
+        "int8":  "add_8bit_int",
+        "int16": "add_16bit_int",
+        "int32": "add_32bit_int",
+        "int64": "add_64bit_int",
+        "uint8": "add_8bit_uint",
+        "uint16": "add_16bit_uint",
+        "uint32": "add_32bit_uint",
+        "uint64": "add_64bit_uint",
+        "float16": "add_16bit_float",
+        "float32": "add_32bit_float",
+        "float64": "add_64bit_float",
+        "str": "add_string",
+        "string": "add_string"
+    }
+    @classmethod
+    def encode(cls, value, data_type:str, byteorder=Endian.BIG, wordorder=Endian.BIG, divisor=1, string_length=16, encoding='utf-8'):
+        method_name = cls._functions_map.get(data_type.lower())
+        if not method_name:
+            raise ModbusDecoderException(f"Invalid Encoding {data_type} for encoding")
+
+        builder = BinaryPayloadBuilder(
+            byteorder=byteorder,  
+            wordorder=wordorder
+        )
+
+        method = getattr(builder, method_name)
+
+        try:
+            if data_type.lower() in ['string', "str"]:
+                method(value, length=string_length, encoding=encoding)
+            else:
+                value = float(value) / float(divisor)
+                if "int" in data_type:
+                    value = round(value)
+                method(value)
+        except Exception as e:
+            raise ModbusEncoderException(f"encode value error: {e}")
+           
+        try:
+            payload = builder.to_registers()
+        except Exception as e:
+            raise ModbusEncoderException(f"Cannot encode value {value} for encoding {data_type}: {e}")
+        
+        return payload
+

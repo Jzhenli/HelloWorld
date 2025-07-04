@@ -9,6 +9,8 @@ class ModbusClientException(Exception):
 class ModbusDecoderException(Exception):
     """ Cannot decode the modbus response """
 
+class ModbusEncoderException(Exception):
+    """ Cannot decode the modbus response """
 
 class ModbusConfigurationException(Exception):
     """ Invalid configuration for Modbus Client """

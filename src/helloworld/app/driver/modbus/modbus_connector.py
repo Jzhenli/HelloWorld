@@ -10,7 +10,7 @@ pymodbus_apply_logging_config("ERROR")
 from dataclasses import asdict
 from .exceptions import ModbusRequestException, ModbusClientException, ModbusConfigurationException, ModbusDecoderException
 from . import requests
-from .decoder import ModbusPayloadDecoder
+from .decoder import ModbusPayloadDecoder, ModbusPayloadEncoder
 from ..connector import Connector
 
 from ...log import logger
@@ -208,15 +208,30 @@ class AsyncModbusConnector(Connector):
 
     async def write_register(self, slave:int, request:ModbusWriteRequest):
         try:
-            value = request.value
-            if request.data_type not in ["str", "string"] and request.divisor > 1:
-                value = int(value * request.divisor)
-
-            _response = await self.client.write_register(
-                address=request.address, 
-                value=value, 
-                slave=slave
+            payload = ModbusPayloadEncoder.encode(
+                value=request.value,
+                data_type=request.data_type,
+                byteorder=ORDER_CODE.get(request.byteorder),
+                wordorder=ORDER_CODE.get(request.wordorder),
+                divisor=request.divisor,
             )
+
+            len_payload = len(payload)
+            if len_payload == 1 :
+                _response = await self.client.write_register(
+                    address=request.address, 
+                    value=payload[0], 
+                    slave=slave
+                )
+            elif len_payload > 1 :
+                _response = await self.client.write_registers(
+                    address=request.address, 
+                    values=payload, 
+                    slave=slave
+                )
+            else:
+                raise ModbusRequestException(f"invalid request {request}")  
+
             if _response.isError():
                 raise ModbusRequestException(self._get_error_message(_response, request))
             
