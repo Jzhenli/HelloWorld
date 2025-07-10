@@ -1,5 +1,4 @@
 import uuid
-import glob
 import platform
 from fastapi import APIRouter, Depends
 import serial.tools.list_ports
@@ -11,6 +10,7 @@ from ...db.models import Device, Metric
 from ...models.device import DeviceRequest, SettingRequest
 from ...device import device_manager, BaseDevice
 from .metric import get_metric_ids_by_names_daking
+from ...utils.network import get_local_ip_list, get_network_cards
 
 router = APIRouter(prefix="/iot", tags=["Action"])
 
@@ -86,8 +86,8 @@ async def discovery_bacnet_device():
         ret = {"status":"FAIL", "data":error_msg}
     return ret
 
-@router.post("/bacnet/request", response_model=ResponseModel, status_code=200)
-async def bacnet_request(request:DeviceRequest, session: AsyncSession = Depends(get_session)):
+@router.post("/bacnet/request", status_code=200)
+async def bacnet_request(request:DeviceRequest):
     try:
         local_bacnet_device = device_manager.get_proxy_device("bacnet")
         await local_bacnet_device.open()
@@ -125,12 +125,27 @@ async def read_modbusrtu_ports():
         ports = serial.tools.list_ports.comports()
         data = [port.device for port in ports]
     elif os_name == "Linux":
+        import glob
         data = glob.glob('/dev/ttyS*')
     else:
         status = "FAIL"
         data = "OS not support"
     return {"status":status, "data":data}
 
+@router.get("/netinfo")
+async def get_network_info():
+    try:
+        os_name = platform.system()
+        if os_name == "Windows":
+            data = get_network_cards()
+        else:
+            data = get_local_ip_list()
+        status = "OK"
+    except:
+        status = "FAIL"
+        data = []
+
+    return {"status":status, "data":data}
 
 @router.post("/daking/points", status_code=200)
 async def batch_set_daking_points(points: DakingWrite, session: AsyncSession = Depends(get_session)):

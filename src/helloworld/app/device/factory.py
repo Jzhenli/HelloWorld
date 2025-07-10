@@ -3,7 +3,7 @@ from .devs.modbus import LocalModbusDevice, ModbusDevice
 from .devs.bacnet import LocalBACNetDevice, BACNetDevice
 
 from ..db.models import Device
-from ..utils.network import get_local_ip
+from ..utils.network import get_default_ip
 
 class DeviceFactory:
     def __init__(self):
@@ -14,7 +14,7 @@ class DeviceFactory:
         if proxy_dev := self.proxy_devices.get(device_type):
             return proxy_dev
         if device_type == "bacnet":
-            local_ipv4 = get_local_ip()
+            local_ipv4 = get_default_ip()
             print("local_ipv4=", local_ipv4)
             virtual_device_info = {
                 "uid": "local_bacnet_device",
