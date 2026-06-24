@@ -123,7 +123,7 @@ jobs:
               export PIP_EXTRA_INDEX_URL="https://www.piwheels.org/simple"
             fi
 
-            pip3 install "git+https://github.com/Jzhenli/pyapp.git#egg=pyapp-cli[compile]"
+            pip3 install "pyapp-cli[compile] @ git+https://github.com/Jzhenli/pyapp.git"
             pyapp build linux --arch ${{ matrix.arch }}
 
             if [ "${{ needs.config.outputs.enable_nuitka }}" = "true" ]; then
