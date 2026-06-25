@@ -21,10 +21,11 @@ fi
 apt update -yq && apt upgrade -yq
 apt install -yq tur-repo && apt update -yq
 
-# 从环境变量获取 Python 版本，默认 3.11
-echo "PYTHON_VERSION from env: ${PYTHON_VERSION:-not set}"
-PY_VER="${PYTHON_VERSION:-3.11}"
-PY_VER=$(echo "$PY_VER" | cut -d. -f1,2)  # 取主版本号如 3.11
+# 优先用位置参数 $1，其次回退到环境变量，最后默认值 3.11
+PYTHON_VERSION="${1:-${PYTHON_VERSION:-3.11}}"
+echo "PYTHON_VERSION from arg/env: ${PYTHON_VERSION}"
+
+PY_VER=$(echo "$PYTHON_VERSION" | cut -d. -f1,2)
 echo "Installing python${PY_VER}"
 apt install -yq python${PY_VER}
 
@@ -43,7 +44,6 @@ pip install MarkupSafe==2.1.3 ordered-set==4.1.0 zstandard==0.23.0 nuitka==2.7.1
 # 编译
 cd /src/src
 APP_MODULE="demo"
-
 python -m nuitka --module $APP_MODULE --include-package=$APP_MODULE \
   --output-dir=/src/dist --remove-output \
   --assume-yes-for-downloads --no-progressbar
