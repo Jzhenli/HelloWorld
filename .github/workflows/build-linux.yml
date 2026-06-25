@@ -86,11 +86,17 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             apt-get update -qq
-            apt-get install -y -qq python${{ needs.config.outputs.python_version }} python${{ needs.config.outputs.python_version }}-pip python${{ needs.config.outputs.python_version }}-venv build-essential libffi-dev libssl-dev \
+            PY_VER="${{ needs.config.outputs.python_version }}"
+            # Add bookworm repos for Python 3.10+, trixie for Python 3.12
+            case "$PY_VER" in
+              3.12) echo "deb http://deb.debian.org/debian trixie main" >> /etc/apt/sources.list ;;
+              3.11|3.10) echo "deb http://deb.debian.org/debian bookworm main" >> /etc/apt/sources.list ;;
+            esac
+            apt-get update -qq
+            apt-get install -y -qq python${PY_VER} python${PY_VER}-venv build-essential libffi-dev libssl-dev \
               libbz2-dev libreadline-dev libsqlite3-dev zlib1g-dev \
               wget git file ca-certificates tar gzip gcc g++ make patchelf
-            ln -sf /usr/bin/python${{ needs.config.outputs.python_version }} /usr/bin/python3
-            ln -sf /usr/bin/pip${{ needs.config.outputs.python_version }} /usr/bin/pip3
+            ln -sf /usr/bin/python${PY_VER} /usr/bin/python3
           run: |
             # Use piwheels for armv7 pre-compiled wheels
             if [ "${{ matrix.arch }}" = "armv7l" ]; then
