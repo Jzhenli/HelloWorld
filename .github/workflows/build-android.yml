@@ -140,11 +140,6 @@ jobs:
 
           pyapp compile android --precompiled "$SO_FILE"
 
-      - name: Fix gradlew permissions
-        run: |
-          chmod +x bundles/android/gradlew
-          sed -i 's/\r$//' bundles/android/gradlew
-
       - name: Package APK
         run: pyapp package android
 
