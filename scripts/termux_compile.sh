@@ -22,8 +22,10 @@ apt update -yq && apt upgrade -yq
 apt install -yq tur-repo && apt update -yq
 
 # 从环境变量获取 Python 版本，默认 3.11
+echo "PYTHON_VERSION from env: ${PYTHON_VERSION:-not set}"
 PY_VER="${PYTHON_VERSION:-3.11}"
 PY_VER=$(echo "$PY_VER" | cut -d. -f1,2)  # 取主版本号如 3.11
+echo "Installing python${PY_VER}"
 apt install -yq python${PY_VER}
 
 PY_BIN=$(ls $PREFIX/bin/python3.* 2>/dev/null | grep -v config | head -1)
