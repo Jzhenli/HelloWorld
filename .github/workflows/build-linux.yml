@@ -93,10 +93,11 @@ jobs:
               3.11|3.10) echo "deb http://deb.debian.org/debian bookworm main" >> /etc/apt/sources.list ;;
             esac
             apt-get update -qq
-            apt-get install -y -qq python${PY_VER} python${PY_VER}-venv build-essential libffi-dev libssl-dev \
+            apt-get install -y -qq python${PY_VER} python${PY_VER}-pip python${PY_VER}-venv build-essential libffi-dev libssl-dev \
               libbz2-dev libreadline-dev libsqlite3-dev zlib1g-dev \
               wget git file ca-certificates tar gzip gcc g++ make patchelf
             ln -sf /usr/bin/python${PY_VER} /usr/bin/python3
+            ln -sf /usr/bin/pip${PY_VER} /usr/bin/pip3
           run: |
             # Use piwheels for armv7 pre-compiled wheels
             if [ "${{ matrix.arch }}" = "armv7l" ]; then
