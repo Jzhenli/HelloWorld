@@ -27,6 +27,7 @@ on:
 
 permissions:
   contents: read
+  packages: write   # 允许 run-on-arch-action 把镜像推到 GHCR 做缓存
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -73,14 +74,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 在宿主机(x86)上下载 PBS stripped 版，避免 QEMU 网络瓶颈，并用于预填充 pyapp 缓存
+      # 在宿主机(x86)上下载 PBS stripped 版，并把文件名写入工作区文件供容器读取
       - name: Download PBS on Host
         run: |
           PBS_TAG="20260610"
           PY_VER="${{ needs.config.outputs.python_version }}"
           PY_MINOR=$(echo "$PY_VER" | cut -d. -f1,2)
 
-          # 补丁号必须与 PBS_TAG 对应；换 tag 时同步更新
           case "$PY_MINOR" in
             3.10) FULL_PY_VER="3.10.20" ;;
             3.11) FULL_PY_VER="3.11.15" ;;
@@ -94,61 +94,58 @@ jobs:
             aarch64) TRIPLE="aarch64-unknown-linux-gnu" ;;
           esac
 
-          # 改用 install_only_stripped：体积更小，且与 pyapp 打包运行时同源
           FILENAME="cpython-${FULL_PY_VER}+${PBS_TAG}-${TRIPLE}-install_only_stripped.tar.gz"
           URL="https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_TAG}/${FILENAME}"
           echo "Downloading PBS from $URL to pbs.tar.gz"
 
-          # 预检：404 时给出明确报错
           wget -q --spider "$URL" || {
             echo "::error::URL not found (404): $URL"
-            echo "::error::请检查 FULL_PY_VER='$FULL_PY_VER' 是否与 PBS_TAG='$PBS_TAG' 对应"
             exit 1
           }
-
           wget -q "$URL" -O pbs.tar.gz
           ls -lh pbs.tar.gz
 
-          # 把精确文件名存到 GITHUB_ENV，供下一步在 QEMU 内引用
-          echo "PBS_FILENAME=$FILENAME" >> $GITHUB_ENV
+          # 把文件名写到工作区文件，容器内通过 /github/workspace 读取，绕开 env 透传问题
+          echo -n "$FILENAME" > pbs_filename.txt
+          echo "PBS_FILENAME=$FILENAME"
 
       - name: Build on ${{ matrix.arch }}
         uses: uraimo/run-on-arch-action@v3
-        env:
-          PBS_FILENAME: ${{ env.PBS_FILENAME }}
         with:
           arch: ${{ matrix.qemu_arch }}
           distro: ${{ inputs.distro || 'bullseye' }}
           githubToken: ${{ github.token }}
 
-          # 仅安装编译工具链，不再安装系统 python 和 lib*-dev
           install: |
             apt-get update -qq
             apt-get install -y -qq build-essential gcc g++ make patchelf \
               wget git file ca-certificates tar gzip
 
-          # 直接解压宿主机下载好的 pbs.tar.gz (位于挂载的 /github/workspace 目录)
           run: |
+            set +u  # 容器内默认 set -u，先关闭避免引用未定义变量报错
+
+            # 从工作区文件读取 PBS 文件名（工作区挂载在 /github/workspace）
+            PBS_FILENAME=$(cat /github/workspace/pbs_filename.txt)
+            echo "PBS_FILENAME=$PBS_FILENAME"
+            [ -z "$PBS_FILENAME" ] && { echo "error: PBS_FILENAME is empty"; exit 1; }
+
             # (1) 解压 PBS 到 /opt/python，作编译期解释器
             mkdir -p /opt/python
-            tar -xzf pbs.tar.gz -C /opt/python --strip-components=1
+            tar -xzf /github/workspace/pbs.tar.gz -C /opt/python --strip-components=1
             ln -sf /opt/python/bin/python3 /usr/bin/python3
             export PATH="/opt/python/bin:$PATH"
 
-            # armv7l 使用 piwheels 获取预编译轮子
             if [ "${{ matrix.arch }}" = "armv7l" ]; then
               export PIP_EXTRA_INDEX_URL="https://www.piwheels.org/simple"
             fi
 
-            # (2) 关键：预填充 pyapp 运行时缓存，让 pyapp build 跳过第二次下载
-            #     pbs.tar.gz 就是宿主机下载的 stripped 版，与 pyapp 期望的文件名一致
+            # (2) 预填充 pyapp 运行时缓存，让 pyapp build 跳过第二次下载
             CACHE_DIR="/root/.pyapp/cache/runtimes"
             mkdir -p "$CACHE_DIR"
-            cp pbs.tar.gz "$CACHE_DIR/$PBS_FILENAME"
+            cp /github/workspace/pbs.tar.gz "$CACHE_DIR/$PBS_FILENAME"
             echo "Seeded pyapp cache: $CACHE_DIR/$PBS_FILENAME"
             ls -lh "$CACHE_DIR/"
 
-            # 安装并执行编译 (PBS 是独立环境，不需要 --break-system-packages)
             python3 -m pip install --upgrade pip
             python3 -m pip install "pyapp-cli[compile] @ git+https://github.com/Jzhenli/pyapp.git"
 
