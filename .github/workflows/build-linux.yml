@@ -103,8 +103,8 @@ jobs:
               export PIP_EXTRA_INDEX_URL="https://www.piwheels.org/simple"
             fi
 
-            python3 -m pip install --upgrade pip
-            python3 -m pip install "pyapp-cli[compile] @ git+https://github.com/Jzhenli/pyapp.git"
+            python3 -m pip install --break-system-packages --upgrade pip
+            python3 -m pip install --break-system-packages "pyapp-cli[compile] @ git+https://github.com/Jzhenli/pyapp.git"
             pyapp build linux --arch ${{ matrix.arch }}
 
             if [[ "${{ inputs.enable_nuitka }}" != "false" ]]; then
