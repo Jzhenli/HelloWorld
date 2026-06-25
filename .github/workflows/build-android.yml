@@ -85,7 +85,7 @@ jobs:
 
           mkdir -p dist && chmod -R 777 dist src/
 
-          docker run --rm -v $PWD:/src "$IMAGE" bash /src/scripts/termux_compile.sh
+          docker run --rm -v $PWD:/src -e PYTHON_VERSION="${{ needs.config.outputs.python_version }}" "$IMAGE" bash /src/scripts/termux_compile.sh
 
       - uses: actions/upload-artifact@v4
         with:
