@@ -128,7 +128,7 @@ jobs:
             # 安装并执行编译 (PBS 是独立环境，不需要 --break-system-packages)
             python3 -m pip install --upgrade pip
             python3 -m pip install "pyapp-cli[compile] @ git+https://github.com/Jzhenli/pyapp.git"
-            
+
             pyapp build linux --arch ${{ matrix.arch }}
             if [[ "${{ inputs.enable_nuitka }}" != "false" ]]; then
               pyapp compile linux

@@ -49,10 +49,6 @@ jobs:
       - name: Build
         run: pyapp build windows
 
-      - name: Setup MSVC
-        if: inputs.enable_nuitka != false
-        uses: ilammy/msvc-dev-cmd@v1
-
       - name: Compile with Nuitka
         if: inputs.enable_nuitka != false
         run: pyapp compile windows
