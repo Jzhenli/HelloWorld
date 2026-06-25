@@ -13,6 +13,12 @@ on:
         type: choice
         options: [armv7l, aarch64, 'armv7l,aarch64']
         default: 'armv7l'
+      distro:
+        description: 'Debian distro (bullseye=GLIBC 2.31, bookworm=GLIBC 2.36)'
+        required: false
+        type: choice
+        options: [bullseye, bookworm]
+        default: 'bullseye'
       enable_nuitka:
         description: 'Enable Nuitka compilation'
         required: false
@@ -32,43 +38,21 @@ jobs:
     outputs:
       app_name: ${{ steps.vars.outputs.app_name }}
       version: ${{ steps.vars.outputs.version }}
-      enable_nuitka: ${{ steps.vars.outputs.enable_nuitka }}
       python_version: ${{ steps.vars.outputs.python_version }}
       build_matrix: ${{ steps.matrix.outputs.build_matrix }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve variables
+      - name: Read project config
         id: vars
-        env:
-          ENABLE_NUITKA_INPUT: ${{ inputs.enable_nuitka }}
         run: |
-          python3 << 'EOF' >> $GITHUB_OUTPUT
-          import tomllib, os
+          APP_NAME=$(grep '^name = ' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          PYTHON_VERSION=$(grep 'python_version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
-          with open('pyproject.toml', 'rb') as f:
-              config = tomllib.load(f)
-
-          app_name = config['project']['name']
-          default_ver = config['project']['version']
-          python_version = config['tool']['pyapp']['python_version']
-
-          # Resolve version: tag > pyproject.toml default
-          ref = os.environ.get('GITHUB_REF', '')
-          if ref.startswith('refs/tags/'):
-              version = ref.replace('refs/tags/', '').rsplit('/v', 1)[-1]
-          else:
-              version = default_ver
-
-          # Resolve enable_nuitka
-          event = os.environ.get('GITHUB_EVENT_NAME', '')
-          enable_nuitka = 'true' if event != 'workflow_dispatch' else os.environ.get('ENABLE_NUITKA_INPUT', 'true')
-
-          print(f'app_name={app_name}')
-          print(f'version={version}')
-          print(f'enable_nuitka={enable_nuitka}')
-          print(f'python_version={python_version}')
-          EOF
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "python_version=$PYTHON_VERSION" >> $GITHUB_OUTPUT
 
       - name: Generate matrix
         id: matrix
@@ -94,39 +78,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Update version
-        env:
-          VERSION: ${{ needs.config.outputs.version }}
-        run: |
-          python3 -c "
-          import tomllib, os
-          with open('pyproject.toml', 'rb') as f:
-              default_ver = tomllib.load(f)['project']['version']
-          version = os.environ['VERSION']
-          if version != default_ver:
-              content = open('pyproject.toml').read()
-              content = content.replace(f'version = \"{default_ver}\"', f'version = \"{version}\"', 1)
-              open('pyproject.toml', 'w').write(content)
-          "
-
       - name: Build on ${{ matrix.arch }}
         uses: uraimo/run-on-arch-action@v3
         with:
           arch: ${{ matrix.qemu_arch }}
-          distro: bullseye
+          distro: ${{ inputs.distro || 'bullseye' }}
           githubToken: ${{ github.token }}
           install: |
             apt-get update -qq
-            # Add bookworm repos for newer Python versions
-            echo "deb http://deb.debian.org/debian bookworm main" >> /etc/apt/sources.list
-            apt-get update -qq
-            PY_VER=${{ needs.config.outputs.python_version }}
-            apt-get install -y -qq python${PY_VER} python${PY_VER}-pip python${PY_VER}-venv build-essential libffi-dev libssl-dev \
+            apt-get install -y -qq python${{ needs.config.outputs.python_version }} python${{ needs.config.outputs.python_version }}-pip python${{ needs.config.outputs.python_version }}-venv build-essential libffi-dev libssl-dev \
               libbz2-dev libreadline-dev libsqlite3-dev zlib1g-dev \
               wget git file ca-certificates tar gzip gcc g++ make patchelf
-            # Create symlinks so python3/pip3 point to the target version
-            ln -sf /usr/bin/python${PY_VER} /usr/bin/python3
-            ln -sf /usr/bin/pip${PY_VER} /usr/bin/pip3
+            ln -sf /usr/bin/python${{ needs.config.outputs.python_version }} /usr/bin/python3
+            ln -sf /usr/bin/pip${{ needs.config.outputs.python_version }} /usr/bin/pip3
           run: |
             # Use piwheels for armv7 pre-compiled wheels
             if [ "${{ matrix.arch }}" = "armv7l" ]; then
@@ -137,7 +101,7 @@ jobs:
             python3 -m pip install "pyapp-cli[compile] @ git+https://github.com/Jzhenli/pyapp.git"
             pyapp build linux --arch ${{ matrix.arch }}
 
-            if [ "${{ needs.config.outputs.enable_nuitka }}" = "true" ]; then
+            if [[ "${{ inputs.enable_nuitka }}" != "false" ]]; then
               pyapp compile linux
             fi
 
@@ -155,4 +119,4 @@ jobs:
           echo "### Linux Build (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ needs.config.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Arch**: ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Nuitka**: ${{ needs.config.outputs.enable_nuitka }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Nuitka**: ${{ inputs.enable_nuitka != false }}" >> $GITHUB_STEP_SUMMARY
