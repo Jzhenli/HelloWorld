@@ -38,6 +38,7 @@ jobs:
       build_matrix: ${{ steps.matrix.outputs.build_matrix }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Read project config
         id: vars
         run: |
@@ -45,10 +46,12 @@ jobs:
           VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
           APP_MODULE=$(grep 'app_module' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
           PYTHON_VERSION=$(grep 'python_version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "app_module=$APP_MODULE" >> $GITHUB_OUTPUT
           echo "python_version=$PYTHON_VERSION" >> $GITHUB_OUTPUT
+
       - name: Generate matrix
         id: matrix
         run: |
@@ -56,8 +59,10 @@ jobs:
           ARCHS=$(echo "$ARCHS" | tr -d ' ')
           COMPILE=""
           BUILD=""
+
           [[ "$ARCHS" == *"arm64"* ]] && COMPILE+='{"arch":"arm64","runs_on":"ubuntu-24.04-arm","termux_arch":"aarch64","android_abi":"arm64-v8a"},' && BUILD+='{"arch":"arm64","android_abi":"arm64-v8a","apk_arch":"arm64"},'
           [[ "$ARCHS" == *"arm32"* ]] && COMPILE+='{"arch":"arm32","runs_on":"ubuntu-24.04-arm","termux_arch":"arm","android_abi":"armeabi-v7a"},' && BUILD+='{"arch":"arm32","android_abi":"armeabi-v7a","apk_arch":"arm32"},'
+
           echo "compile_matrix=[${COMPILE%,}]" >> $GITHUB_OUTPUT
           echo "build_matrix=[${BUILD%,}]" >> $GITHUB_OUTPUT
 
@@ -70,21 +75,20 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.config.outputs.compile_matrix) }}
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Compile in Termux Docker
         env:
           PYTHON_VERSION: ${{ needs.config.outputs.python_version }}
         run: |
-          echo ">>> DEBUG: PYTHON_VERSION on host = '$PYTHON_VERSION'"
-          [ -z "$PYTHON_VERSION" ] && { echo "::error::PYTHON_VERSION is empty on host!"; exit 1; }
-
           IMAGE="termux/termux-docker:${{ matrix.termux_arch }}"
+
           mkdir -p dist && chmod -R 777 dist src/
-          docker run --rm \
-            -v "$PWD":/src \
-            "$IMAGE" \
-            bash /src/scripts/termux_compile.sh "$PYTHON_VERSION"
+
+          docker run --rm -v $PWD:/src "$IMAGE" bash /src/scripts/termux_compile.sh "$PYTHON_VERSION"
+
       - uses: actions/upload-artifact@v4
         with:
           name: compiled-${{ matrix.android_abi }}
@@ -94,49 +98,64 @@ jobs:
   build:
     needs: [config, compile]
     if: >-
-      always() && needs.config.result == 'success' && (inputs.enable_nuitka == false || needs.compile.result == 'success')
+      always() &&
+      needs.config.result == 'success' &&
+      (inputs.enable_nuitka == false || needs.compile.result == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.config.outputs.build_matrix) }}
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         if: inputs.enable_nuitka != false
         with:
           name: compiled-${{ matrix.android_abi }}
           path: dist/${{ matrix.android_abi }}
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ needs.config.outputs.python_version }}
+
       - name: Install pyapp
         run: pip install "pyapp-cli[compile] @ git+https://github.com/Jzhenli/pyapp.git"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Build
         run: pyapp build android --arch ${{ matrix.android_abi }}
+
       - name: Compile with precompiled .so
         if: inputs.enable_nuitka != false
         run: |
           APP_MODULE="${{ needs.config.outputs.app_module }}"
           SO_FILE="dist/${{ matrix.android_abi }}/${APP_MODULE}.so"
+
           [ ! -f "$SO_FILE" ] && { echo "::error::.so not found: $SO_FILE"; exit 1; }
+
           pyapp compile android --precompiled "$SO_FILE"
+
       - name: Package APK
         run: pyapp package android
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.config.outputs.app_name }}-${{ needs.config.outputs.version }}-android-${{ matrix.apk_arch }}
           path: dist/*.apk
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: log-failure-${{ matrix.android_abi }}
           path: bundles/android/app/build/reports/
+
       - name: Summary
         if: always()
         run: |
